@@ -18,7 +18,11 @@ loom {
 dependencies {
 	minecraft "com.mojang:minecraft:${minecraftVersion}"
 	if (buildTools.useMojangMappings()) {
-		mappings loom.officialMojangMappings()
+		try {
+			mappings loom.officialMojangMappings()
+		} catch (Exception ignored) {
+			mappings "net.fabricmc:intermediary:${minecraftVersion}"
+		}
 	} else {
 		mappings "net.fabricmc:yarn:${buildTools.getYarnVersion()}:v2"
 	}
