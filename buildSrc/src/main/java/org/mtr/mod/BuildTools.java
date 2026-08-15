@@ -62,7 +62,7 @@ public class BuildTools {
 		path = project.getProjectDir().toPath();
 		version = project.getVersion().toString();
 		majorVersion = minecraftVersion.startsWith("1.") ? Integer.parseInt(minecraftVersion.split("\\.")[1]) : Integer.parseInt(minecraftVersion.split("\\.")[0]);
-		javaLanguageVersion = majorVersion <= 16 ? 8 : majorVersion == 17 ? 16 : majorVersion < 25 ? 21 : 25;
+		javaLanguageVersion = majorVersion <= 16 ? 8 : majorVersion == 17 ? 16 : 21;
 
 		final Path accessWidenerPath = path.resolve("src/main/resources").resolve(loader.equals("fabric") ? "" : "META-INF");
 		Files.createDirectories(accessWidenerPath);
