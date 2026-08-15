@@ -79,7 +79,14 @@ public class BuildTools {
 		return getJson("https://meta.fabricmc.net/v2/versions/loader/" + minecraftVersion).getAsJsonArray().get(0).getAsJsonObject().getAsJsonObject("loader").get("version").getAsString();
 	}
 
+	public boolean useMojangMappings() {
+		return majorVersion >= 26;
+	}
+
 	public String getYarnVersion() {
+		if (useMojangMappings()) {
+			return "";
+		}
 		if (minecraftVersion.equals("1.20.1")) {
 			return "1.20.1+build.10"; // 1.20.1 version not working
 		}
