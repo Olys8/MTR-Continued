@@ -1,3 +1,12 @@
+# MTR-Continued
+
+**MTR-Continued** — это проект, нацеленный на обеспечение работы оригинального мода [Minecraft Transit Railway](https://github.com/Minecraft-Transit-Railway/Minecraft-Transit-Railway) на последних версиях игры.
+
+> **Примечание:** Этот проект является сторонним форком и не имеет отношения к оригинальным авторам Minecraft Transit Railway.
+> Ссылка на оригинальный репозиторий: [https://github.com/Minecraft-Transit-Railway/Minecraft-Transit-Railway](https://github.com/Minecraft-Transit-Railway/Minecraft-Transit-Railway).
+
+---
+
 ## Minecraft Transit Railway 4.0.0
 
 _Minecraft Transit Railway_ is a [Minecraft mod](https://minecraft.wiki/w/Mods) that allows you to build your own transport network with automated trains, boats, cable cars, and planes!
