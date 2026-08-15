@@ -135,7 +135,7 @@ shadowJar {
 remapJar {
 	dependsOn(shadowJar)
 	mustRunAfter(shadowJar)
-	inputFile = file(shadowJar.archivePath)
+	inputFile = shadowJar.archiveFile
 }
 
 test {
