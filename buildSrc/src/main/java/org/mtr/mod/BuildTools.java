@@ -122,7 +122,11 @@ public class BuildTools {
 		try {
 			final String modIdString = "jade";
 			final String[] fileNameSplit = new ModId(modIdString, ModProvider.MODRINTH).getModFiles(minecraftVersion, loader.equals("fabric") ? ModLoader.FABRIC : ModLoader.FORGE, "").get(0).fileName.split("-");
-			return fileNameSplit[fileNameSplit.length - 1].split("\\.jar")[0] + (minecraftVersion.equals("1.20.1") ? "+" + loader : "");
+			final String version = fileNameSplit[fileNameSplit.length - 1].split("\\.jar")[0];
+			if (minecraftVersion.equals("1.20.1") || majorVersion >= 26) {
+				return version + "+" + loader;
+			}
+			return version;
 		} catch (Exception e) {
 			LOGGER.error("Failed to fetch Jade version for " + minecraftVersion, e);
 			return "11.0.0";
