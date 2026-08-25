@@ -19,7 +19,9 @@ loom {
 
 dependencies {
 	minecraft "com.mojang:minecraft:${minecraftVersion}"
-	if (!buildTools.useMojangMappings()) {
+	if (buildTools.useMojangMappings()) {
+		mappings loom.officialMojangMappings()
+	} else {
 		mappings "net.fabricmc:yarn:${buildTools.getYarnVersion()}:v2"
 	}
 	if (buildTools.useMojangMappings()) {
