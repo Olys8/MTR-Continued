@@ -4,34 +4,54 @@ import org.mtr.core.WebserverSetup
 import org.mtr.mod.BuildTools
 
 plugins {
-	id "fabric-loom" version "1.10-SNAPSHOT"
+	id "net.fabricmc.fabric-loom" version "1.17.19"
 }
 
 final BuildTools buildTools = new BuildTools(minecraftVersion, "fabric", project)
 
 loom {
-	accessWidenerPath = file("src/main/resources/mtr.accesswidener")
+	if (file("src/main/resources/mtr.accesswidener").exists()) {
+		accessWidenerPath = file("src/main/resources/mtr.accesswidener")
+	}
 	runConfigs.configureEach { ideConfigGenerated = true }
 	mixin { setDefaultRefmapName("mtr.refmap.json") }
 }
 
 dependencies {
 	minecraft "com.mojang:minecraft:${minecraftVersion}"
-	mappings "net.fabricmc:yarn:${buildTools.getYarnVersion()}:v2"
-	modImplementation "net.fabricmc:fabric-loader:${buildTools.getFabricVersion()}"
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${buildTools.getFabricApiVersion()}"
-	modApi("com.terraformersmc:modmenu:${buildTools.getModMenuVersion()}") { exclude group: "net.fabricmc", module: "fabric-loader" }
+	if (buildTools.useMojangMappings()) {
+		mappings loom.officialMojangMappings()
+	} else {
+		mappings "net.fabricmc:yarn:${buildTools.getYarnVersion()}:v2"
+	}
+	if (buildTools.useMojangMappings()) {
+		implementation "net.fabricmc:fabric-loader:${buildTools.getFabricVersion()}"
+		implementation "net.fabricmc.fabric-api:fabric-api:${buildTools.getFabricApiVersion()}"
+		api("com.terraformersmc:modmenu:${buildTools.getModMenuVersion()}") { exclude group: "net.fabricmc", module: "fabric-loader" }
+	} else {
+		modImplementation "net.fabricmc:fabric-loader:${buildTools.getFabricVersion()}"
+		modImplementation "net.fabricmc.fabric-api:fabric-api:${buildTools.getFabricApiVersion()}"
+		modApi("com.terraformersmc:modmenu:${buildTools.getModMenuVersion()}") { exclude group: "net.fabricmc", module: "fabric-loader" }
+	}
 	shadowImplementation "org.mtr:Minecraft-Mappings-fabric-${minecraftVersion}:0.0.1-dev"
 	testImplementation "org.junit.jupiter:junit-jupiter-api:5.+"
 	testImplementation "org.junit.platform:junit-platform-launcher:1.+"
 	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.+"
 
 	if (buildTools.hasJadeSupport()) {
-		modCompileOnly "maven.modrinth:jade:${buildTools.getJadeVersion()}"
+		if (buildTools.useMojangMappings()) {
+			compileOnly "maven.modrinth:jade:${buildTools.getJadeVersion()}"
+		} else {
+			modCompileOnly "maven.modrinth:jade:${buildTools.getJadeVersion()}"
+		}
 	}
 
 	if (buildTools.hasWthitSupport()) {
-		modCompileOnly "mcp.mobius.waila:wthit-api:${buildTools.getWthitVersion()}"
+		if (buildTools.useMojangMappings()) {
+			compileOnly "mcp.mobius.waila:wthit-api:${buildTools.getWthitVersion()}"
+		} else {
+			modCompileOnly "mcp.mobius.waila:wthit-api:${buildTools.getWthitVersion()}"
+		}
 	}
 }
 
@@ -128,10 +148,10 @@ shadowJar {
 	exclude excludeAssets == "true" ? "assets" : "abc123"
 }
 
-remapJar {
+jar {
 	dependsOn(shadowJar)
 	mustRunAfter(shadowJar)
-	inputFile = file(shadowJar.archivePath)
+	from shadowJar.archiveFile.map { zipTree(it) }
 }
 
 test {

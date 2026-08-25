@@ -11,7 +11,12 @@ plugins {
 	id "org.gradle.toolchains.foojay-resolver-convention" version "+"
 }
 
+def mcVersion = providers.gradleProperty("minecraftVersion").orElse("1.20.1").get()
+def majorVer = mcVersion.startsWith("1.") ? Integer.parseInt(mcVersion.split("\\.")[1]) : Integer.parseInt(mcVersion.split("\\.")[0])
+
 include("fabric")
-include("forge")
+if (majorVer < 26) {
+	include("forge")
+}
 
 rootProject.name = "Minecraft-Transit-Railway"

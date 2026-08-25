@@ -61,8 +61,8 @@ public class BuildTools {
 		this.loader = loader;
 		path = project.getProjectDir().toPath();
 		version = project.getVersion().toString();
-		majorVersion = Integer.parseInt(minecraftVersion.split("\\.")[1]);
-		javaLanguageVersion = majorVersion <= 16 ? 8 : majorVersion == 17 ? 16 : 17;
+		majorVersion = minecraftVersion.startsWith("1.") ? Integer.parseInt(minecraftVersion.split("\\.")[1]) : Integer.parseInt(minecraftVersion.split("\\.")[0]);
+		javaLanguageVersion = majorVersion <= 16 ? 8 : majorVersion == 17 ? 16 : majorVersion < 25 ? 21 : 25;
 
 		final Path accessWidenerPath = path.resolve("src/main/resources").resolve(loader.equals("fabric") ? "" : "META-INF");
 		Files.createDirectories(accessWidenerPath);
@@ -79,16 +79,36 @@ public class BuildTools {
 		return getJson("https://meta.fabricmc.net/v2/versions/loader/" + minecraftVersion).getAsJsonArray().get(0).getAsJsonObject().getAsJsonObject("loader").get("version").getAsString();
 	}
 
+	public boolean useMojangMappings() {
+		return majorVersion >= 26;
+	}
+
 	public String getYarnVersion() {
+		if (useMojangMappings()) {
+			return "";
+		}
 		if (minecraftVersion.equals("1.20.1")) {
 			return "1.20.1+build.10"; // 1.20.1 version not working
 		}
-		return getJson("https://meta.fabricmc.net/v2/versions/yarn/" + minecraftVersion).getAsJsonArray().get(0).getAsJsonObject().get("version").getAsString();
+		try {
+			final JsonArray array = getJson("https://meta.fabricmc.net/v2/versions/yarn/" + minecraftVersion).getAsJsonArray();
+			if (array.size() > 0) {
+				return array.get(0).getAsJsonObject().get("version").getAsString();
+			}
+		} catch (Exception e) {
+			LOGGER.error("Failed to fetch Yarn version for " + minecraftVersion, e);
+		}
+		return minecraftVersion + "+build.1";
 	}
 
 	public String getFabricApiVersion() {
 		final String modIdString = "fabric-api";
-		return new ModId(modIdString, ModProvider.MODRINTH).getModFiles(minecraftVersion, ModLoader.FABRIC, "").get(0).fileName.split("\\.jar")[0].replace(modIdString + "-", "");
+		try {
+			return new ModId(modIdString, ModProvider.MODRINTH).getModFiles(minecraftVersion, ModLoader.FABRIC, "").get(0).fileName.split("\\.jar")[0].replace(modIdString + "-", "");
+		} catch (Exception e) {
+			LOGGER.error("Failed to fetch Fabric API version for " + minecraftVersion, e);
+			return "0.100.0+" + minecraftVersion;
+		}
 	}
 
 	public boolean hasJadeSupport() {
@@ -99,9 +119,18 @@ public class BuildTools {
 		if (minecraftVersion.equals("1.19.4")) {
 			return loader.equals("fabric") ? "10.4.0" : "10.1.1"; // 1.19.4 version not working
 		}
-		final String modIdString = "jade";
-		final String[] fileNameSplit = new ModId(modIdString, ModProvider.MODRINTH).getModFiles(minecraftVersion, loader.equals("fabric") ? ModLoader.FABRIC : ModLoader.FORGE, "").get(0).fileName.split("-");
-		return fileNameSplit[fileNameSplit.length - 1].split("\\.jar")[0] + (minecraftVersion.equals("1.20.1") ? "+" + loader : "");
+		try {
+			final String modIdString = "jade";
+			final String[] fileNameSplit = new ModId(modIdString, ModProvider.MODRINTH).getModFiles(minecraftVersion, loader.equals("fabric") ? ModLoader.FABRIC : ModLoader.FORGE, "").get(0).fileName.split("-");
+			final String version = fileNameSplit[fileNameSplit.length - 1].split("\\.jar")[0];
+			if (minecraftVersion.equals("1.20.1") || majorVersion >= 26) {
+				return version + "+" + loader;
+			}
+			return version;
+		} catch (Exception e) {
+			LOGGER.error("Failed to fetch Jade version for " + minecraftVersion, e);
+			return "11.0.0";
+		}
 	}
 
 	public boolean hasWthitSupport() {
@@ -115,20 +144,38 @@ public class BuildTools {
 		} else if (minecraftVersion.equals("1.20.1")) {
 			return loader + "-8.17.0";
 		}
-		final String modIdString = "wthit";
-		return new ModId(modIdString, ModProvider.MODRINTH).getModFiles(minecraftVersion, loader.equals("fabric") ? ModLoader.FABRIC : ModLoader.FORGE, "").get(0).fileName.split("\\.jar")[0].replace(modIdString + "-", "").replace(minecraftVersion + "-", "");
+		try {
+			final String modIdString = "wthit";
+			return new ModId(modIdString, ModProvider.MODRINTH).getModFiles(minecraftVersion, loader.equals("fabric") ? ModLoader.FABRIC : ModLoader.FORGE, "").get(0).fileName.split("\\.jar")[0].replace(modIdString + "-", "").replace(minecraftVersion + "-", "");
+		} catch (Exception e) {
+			LOGGER.error("Failed to fetch WTHIT version for " + minecraftVersion, e);
+			return loader + "-10.0.0";
+		}
 	}
 
 	public String getModMenuVersion() {
 		if (minecraftVersion.equals("1.20.4")) {
 			return "9.0.0"; // TODO latest version not working
 		}
-		final String modIdString = "modmenu";
-		return new ModId(modIdString, ModProvider.MODRINTH).getModFiles(minecraftVersion, ModLoader.FABRIC, "").get(0).fileName.split("\\.jar")[0].replace(modIdString + "-", "");
+		try {
+			final String modIdString = "modmenu";
+			return new ModId(modIdString, ModProvider.MODRINTH).getModFiles(minecraftVersion, ModLoader.FABRIC, "").get(0).fileName.split("\\.jar")[0].replace(modIdString + "-", "");
+		} catch (Exception e) {
+			LOGGER.error("Failed to fetch ModMenu version for " + minecraftVersion, e);
+			return "10.0.0";
+		}
 	}
 
 	public String getForgeVersion() {
-		return getJson("https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json").getAsJsonObject().getAsJsonObject("promos").get(minecraftVersion + "-latest").getAsString();
+		try {
+			final JsonElement promo = getJson("https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json").getAsJsonObject().getAsJsonObject("promos").get(minecraftVersion + "-latest");
+			if (promo != null) {
+				return promo.getAsString();
+			}
+		} catch (Exception e) {
+			LOGGER.error("Failed to fetch Forge version for " + minecraftVersion, e);
+		}
+		return "50.0.0";
 	}
 
 	public void downloadTranslations(String crowdinKey, String geminiKey) throws IOException, InterruptedException {
